@@ -1,6 +1,6 @@
 services:
   - type: web
-    name: telegram-bot
+    name: tiktok-throw-bot
     env: python
     plan: free
     buildCommand: pip install -r requirements.txt
@@ -8,3 +8,5 @@ services:
     envVars:
       - key: TELEGRAM_BOT_TOKEN
         sync: false
+      - key: PYTHON_VERSION
+        value: 3.11.0
