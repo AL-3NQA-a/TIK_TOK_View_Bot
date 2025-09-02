@@ -5,6 +5,10 @@ from telegram import Update
 from telegram.ext import Application, CommandHandler, CallbackContext, MessageHandler, filters
 import requests
 from user_agent import generate_user_agent
+from flask import Flask, request
+
+# إنشاء تطبيق Flask
+app = Flask(__name__)
 
 # إعدادات التسجيل
 logging.basicConfig(
@@ -20,7 +24,7 @@ F = '\033[2;32m'
 RESET = '\033[0m'
 
 # وظيفة البداية
-async def start(update: Update, context: CallbackContext) -> None:
+async def start_command(update: Update, context: CallbackContext) -> None:
     welcome_text = '''
 •••••••••••••••••••••Yusef•••••••••••••••••••••••••
 
@@ -171,8 +175,8 @@ async def process_likes(update: Update, context: CallbackContext, link: str) -> 
     # مسح حالة المستخدم
     context.user_data.clear()
 
-# وظيفة الرئيسية
-def main() -> None:
+# وظيفة الرئيسية لتشغيل البوت
+def run_bot():
     # الحصول على توكن البوت من متغير البيئة
     token = os.getenv('TELEGRAM_BOT_TOKEN')
     if not token:
@@ -183,11 +187,20 @@ def main() -> None:
     application = Application.builder().token(token).build()
     
     # إضافة معالجات الأوامر
-    application.add_handler(CommandHandler("start", start))
+    application.add_handler(CommandHandler("start", start_command))
     application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_message))
     
     # بدء البوت
     application.run_polling()
 
+@app.route('/')
+def home():
+    return "Bot is running!"
+
+@app.route('/health')
+def health_check():
+    return "OK", 200
+
 if __name__ == '__main__':
-    main()
+    # تشغيل البوت عند التنفيذ المباشر
+    run_bot()
