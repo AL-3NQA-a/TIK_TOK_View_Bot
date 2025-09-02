@@ -1,14 +1,27 @@
 import os
 import time
 import logging
+import random
 from telegram import Update
 from telegram.ext import Application, CommandHandler, CallbackContext, MessageHandler, filters
 import requests
-from user_agent import generate_user_agent
 from flask import Flask, request
 
 # إنشاء تطبيق Flask
 app = Flask(__name__)
+
+# قائمة User-Agents بديلة
+USER_AGENTS = [
+    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36",
+    "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36",
+    "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36",
+    "Mozilla/5.0 (iPhone; CPU iPhone OS 14_6 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/14.0 Mobile/15E148 Safari/604.1",
+    "Mozilla/5.0 (iPad; CPU OS 14_6 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/14.0 Mobile/15E148 Safari/604.1",
+    "Mozilla/5.0 (Linux; Android 10; SM-G981B) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.120 Mobile Safari/537.36",
+    "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:89.0) Gecko/20100101 Firefox/89.0",
+    "Mozilla/5.0 (Macintosh; Intel Mac OS X 10.15; rv:89.0) Gecko/20100101 Firefox/89.0",
+    "Mozilla/5.0 (X11; Linux i686; rv:89.0) Gecko/20100101 Firefox/89.0"
+]
 
 # إعدادات التسجيل
 logging.basicConfig(
@@ -16,12 +29,6 @@ logging.basicConfig(
     level=logging.INFO
 )
 logger = logging.getLogger(__name__)
-
-# تعريف الألوان للنصوص (للتنسيق في التيرمينال)
-R = '\033[1;31m'
-X = '\033[1;33m'
-F = '\033[2;32m'
-RESET = '\033[0m'
 
 # وظيفة البداية
 async def start_command(update: Update, context: CallbackContext) -> None:
@@ -58,7 +65,7 @@ async def handle_message(update: Update, context: CallbackContext) -> None:
 async def process_views(update: Update, context: CallbackContext, link: str) -> None:
     await update.message.reply_text("جاري المعالجة... انتظر 60 ثانية 🕑")
     
-    # محاكاة الانتظار (يمكن إزالته في الإصدار النهائي)
+    # محاكاة الانتظار
     time.sleep(2)
     
     try:
@@ -83,7 +90,7 @@ async def process_views(update: Update, context: CallbackContext, link: str) -> 
             'sec-fetch-dest': 'empty',
             'sec-fetch-mode': 'cors',
             'sec-fetch-site': 'same-origin',
-            'user-agent': str(generate_user_agent()),
+            'user-agent': random.choice(USER_AGENTS),
         }
         
         params = {'api': '1'}
@@ -100,7 +107,8 @@ async def process_views(update: Update, context: CallbackContext, link: str) -> 
             params=params,
             cookies=cookies,
             headers=headers,
-            data=data
+            data=data,
+            timeout=30
         )
         
         if '"success"' in response.text:
@@ -119,7 +127,7 @@ async def process_views(update: Update, context: CallbackContext, link: str) -> 
 async def process_likes(update: Update, context: CallbackContext, link: str) -> None:
     await update.message.reply_text("جاري المعالجة... انتظر 60 ثانية 🕑")
     
-    # محاكاة الانتظار (يمكن إزالته في الإصدار النهائي)
+    # محاكاة الانتظار
     time.sleep(2)
     
     try:
@@ -144,7 +152,7 @@ async def process_likes(update: Update, context: CallbackContext, link: str) -> 
             'sec-fetch-dest': 'empty',
             'sec-fetch-mode': 'cors',
             'sec-fetch-site': 'same-origin',
-            'user-agent': str(generate_user_agent()),
+            'user-agent': random.choice(USER_AGENTS),
         }
         
         params = {'api': '1'}
@@ -160,7 +168,8 @@ async def process_likes(update: Update, context: CallbackContext, link: str) -> 
             params=params,
             cookies=cookies,
             headers=headers,
-            data=data
+            data=data,
+            timeout=30
         )
         
         if '"success"' in response.text:
@@ -191,16 +200,29 @@ def run_bot():
     application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_message))
     
     # بدء البوت
+    logger.info("Starting bot...")
     application.run_polling()
 
 @app.route('/')
 def home():
-    return "Bot is running!"
+    return "🤖 Bot is running successfully! | @XRR60"
 
 @app.route('/health')
 def health_check():
     return "OK", 200
 
+@app.route('/webhook', methods=['POST'])
+def webhook():
+    # يمكنك إضافة webhook handling هنا لاحقاً
+    return "Webhook received", 200
+
+# تشغيل البوت عند استيراد الملف
 if __name__ == '__main__':
-    # تشغيل البوت عند التنفيذ المباشر
     run_bot()
+else:
+    # عند التشغيل على Render، سيتم استيراد الملف كوحدة
+    # لذلك ننشئ thread منفصلة لتشغيل البوت
+    import threading
+    bot_thread = threading.Thread(target=run_bot)
+    bot_thread.daemon = True
+    bot_thread.start()
