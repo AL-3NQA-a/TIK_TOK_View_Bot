@@ -1,0 +1,16 @@
+app:
+  name: tiktok-throw-bot
+  stages:
+    - name: main
+      source:
+        git:
+          repository: github.com/AL-3NQA-a/TIK_TOK_View_Bot
+          branch: main
+      build:
+        command: pip install -r requirements.txt
+      run:
+        command: python bot_simple.py
+        working_directory: ./
+      env:
+        - name: TELEGRAM_BOT_TOKEN
+          secret: true
